@@ -1,0 +1,14 @@
+syntax: glob
+build
+dist
+docs/_build
+docs/_templates
+*.egg-info
+*.pyc
+*.pyo
+
+*.DS_Store
+.idea
+venv
+_trial_temp
+*~
