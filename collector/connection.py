@@ -14,20 +14,24 @@ class HttpConnection(object):
         s.stream = True
         return s
 
-    def _do_request(self, request):
+    def _send_request(self, request):
         prepped = self.session.prepare_request(request)
         response = self.session.send(prepped)
         return response
 
-    def request(self, url, **kw):
-        request = requests.Request(method='GET', url=url, **kw)
-        response = self._do_request(request)
-        return response.text
-
-    def post(self, url, **kw):
-        request = requests.Request(method='POST', url=url, **kw)
-        response = self._do_request(request)
+    def _do_request(self, method, url, **kw):
+        request = requests.Request(method=method, url=url, **kw)
+        response = self._send_request(request)
         if response.status_code != 200:
             raise Exception('Server returned unhandled response code: %s'
                             % response.code)
         return response.text
+
+    def request(self, url, **kw):
+        return self._do_request(method='GET', url=url, **kw)
+
+    def post(self, url, **kw):
+        return self._do_request(method='POST', url=url, **kw)
+
+    def delete(self, url, **kw):
+        return self._do_request(method='DELETE', url=url, **kw)
