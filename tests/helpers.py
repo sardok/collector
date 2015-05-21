@@ -58,6 +58,9 @@ class StubCollection(object):
         if entries:
             entry = entries[0]
             entry.update(params)
+            for key, _ in entry.items():
+                if key not in params:
+                    del entry[key]
         else:
             # Create new entry.
             self.data.append(params)
