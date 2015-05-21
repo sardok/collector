@@ -36,6 +36,8 @@ class Model(MutableMapping, QueryApiMixin):
         logname = logname or self.__class__.__name__
         self.logger = logging.getLogger(logname)
         self._update_fields(kwargs)
+        self.__dict__['_key'] = self._key
+        self.__dict__['_ts'] = self._ts
 
     @property
     def _key(self):
@@ -45,9 +47,11 @@ class Model(MutableMapping, QueryApiMixin):
     def _ts(self):
         return self.__ts
 
-    @classmethod
-    def create_model(cls, *a, **kw):
-        return cls(*a, **kw)
+    def create(self, *a, **kw):
+        return type(self)(self.collection, *a, **kw)
+
+    def delete(self):
+        self.collection.delete(self._key)
 
     @staticmethod
     def _sort_chain(qchain):
@@ -100,18 +104,21 @@ class Model(MutableMapping, QueryApiMixin):
         return item in self._field_names
 
     def __getitem__(self, item):
-        return getattr(self, item)
+        if self._is_field(item):
+            return getattr(self, item)
+        return self.__dict__[item]
 
     def __setitem__(self, key, value):
         if self._is_field(key):
-            return object.__setattr__(self, key, value)
+            object.__setattr__(self, key, value)
         else:
-            return setattr(self, key, value)
+            self.__dict__[key] = value
 
     def __delitem__(self, key):
-        delattr(self, key)
         if self._is_field(key):
-            self._field_names.pop(key)
+            self[key] = None
+        else:
+            del self.__dict__[key]
 
     def __iter__(self):
         return iter(self._get_fields())
