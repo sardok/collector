@@ -10,7 +10,7 @@ class QueryResult(object):
         collection = self.model.collection
         for data in collection.iterator_cls(self.result):
             # Create a new model instance
-            model = type(self.model)(collection=collection, **data)
+            model = self.model.create(**data)
             yield model
 
     def first(self):
