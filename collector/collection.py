@@ -24,7 +24,6 @@ class Collection(object):
         self.conn = self.http_conn_cls(username=apikey)
         logging.basicConfig()
         self.logger = logging.getLogger('Collection')
-        self.logger.setLevel(logging.DEBUG)
 
     def request(self, query):
         url = self.endpoint + '?' + urlencode(query)
@@ -35,3 +34,6 @@ class Collection(object):
         payload = self.iterator_cls.serialize(data)
         self.logger.debug('Posting: %s (data: %r)' % (self.endpoint, payload))
         self.conn.post(self.endpoint, data=payload)
+
+    def delete(self, key):
+        return self.conn.delete(self.endpoint + '/' + key)
