@@ -1,7 +1,8 @@
 from unittest import TestCase
 from collector.field import Field
+from collector.model import Model
 from collector.exceptions import NoSuchElement
-from helpers import BasicTestModel, FixedTestDataMixin
+from helpers import BasicTestModel, FixedTestDataMixin, StubCollection
 
 
 class ModelFieldTest(TestCase):
@@ -104,6 +105,73 @@ class ModelDataTest(TestCase, FixedTestDataMixin):
         foo = tm.select('foo').execute().first()
         self.assertEqual(foo._key, 'foo')
 
+    def test_create(self):
+        collection = StubCollection()
+
+        class _TestModel(Model):
+            field1 = Field()
+            field2 = Field()
+
+        tm = _TestModel(collection, _key='key', field1='field1_val',
+                        field2='field2_val')
+        tm.save()
+
+        tm2 = _TestModel(collection).select('key').execute().first()
+        self.assertEqual(tm2.field1, 'field1_val')
+        self.assertEqual(tm2.field2, 'field2_val')
+
+    def test_create_with_declared_fields_only(self):
+        collection = StubCollection()
+
+        class _TestModel(Model):
+            field1 = Field()
+
+        tm = _TestModel(collection, _key='key', field1='field1_val',
+                        field2='field2_val')
+        tm.save()
+
+        tm2 = _TestModel(collection).select('key').execute().first()
+        self.assertEqual(tm2.field1, 'field1_val')
+        with self.assertRaises(KeyError):
+            _ = tm2['field2']
+
+    def test_create_with_create_model(self):
+        tm = self._create_model_for_test_data([])
+        tm_new = tm.create(_key='new', value='new_value', prop='new_prop')
+        tm_new.save()
+
+        tm_new2 = tm.select('new').execute().first()
+        self.assertEqual(tm_new2.value, 'new_value')
+        self.assertEqual(tm_new2.prop, 'new_prop')
+
+    def test_delete_field(self):
+        test_data = [{'_key': 'delete_test', 'value': 'foo', 'prop': 'bar'}]
+        tm = self._create_model_for_test_data(test_data)
+        dt = tm.select('delete_test').execute().first()
+        self.assertEqual(dt.value, 'foo')
+        del dt['value']
+        self.assertIsNone(dt.value)
+        dt.save()
+
+        dt2 = tm.select('delete_test').execute().first()
+        self.assertIsNone(dt2.value)
+
+        # A Field() could be set again even just deleted.
+        dt2.value = 'recovered'
+        self.assertEqual(dt2.value, 'recovered')
+        dt2.save()
+
+        dt3 = tm.select('delete_test').execute().first()
+        self.assertEqual(dt3.value, 'recovered')
+
+    def test_delete_model(self):
+        tm = self._create_model_for_test_data(self.test_data)
+        baz = tm.select('baz').execute().first()
+        baz.delete()
+
+        with self.assertRaises(NoSuchElement):
+            tm.select('baz').execute().first()
+
 
 class ModelDictInterfaceTest(TestCase, FixedTestDataMixin):
     def test_getter(self):
@@ -135,3 +203,11 @@ class ModelDictInterfaceTest(TestCase, FixedTestDataMixin):
 
         expected['_key'] = 'foo'
         self.assertIn(foo, [expected])
+
+    def test_delete(self):
+        tm = self._create_model_for_test_data([])
+        self.assertNotIn('foo', tm)
+        tm['foo'] = 'bar'
+        self.assertIn('foo', tm)
+        del tm['foo']
+        self.assertNotIn('foo', tm)
