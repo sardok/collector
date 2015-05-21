@@ -58,6 +58,12 @@ class StubCollection(object):
         if entries:
             entry = entries[0]
             entry.update(params)
+        else:
+            # Create new entry.
+            self.data.append(params)
+
+    def delete(self, key):
+        self.data = [d for d in self.data if d.get('_key') != key]
 
 
 class FixedTestDataMixin(object):
