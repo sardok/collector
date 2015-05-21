@@ -1,5 +1,6 @@
 import logging
 from abc import ABCMeta
+from itertools import chain
 from collections import MutableMapping
 from collector.field import Field
 from collector.query import QueryApiMixin
@@ -96,9 +97,13 @@ class Model(MutableMapping, QueryApiMixin):
                     self.logger.warn('Missing Field declaration: %s.' % key)
 
     def _get_fields(self):
+        filtered_fields = {}
         fields = {name:  getattr(self, name) for name in self._field_names}
-        fields.update({'_key': self._key, '_ts': self._ts})
-        return fields
+        internal_vars = [('_key', self._key), ('_ts', self._ts)]
+        for key, val in chain(fields.items(), internal_vars):
+            if val is not None:
+                filtered_fields[key] = val
+        return filtered_fields
 
     def _is_field(self, item):
         return item in self._field_names
