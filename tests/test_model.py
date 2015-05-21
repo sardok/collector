@@ -192,7 +192,8 @@ class ModelDictInterfaceTest(TestCase, FixedTestDataMixin):
         self.assertEqual(bar2['prop'], 'prop_modified')
 
     def test_length(self):
-        foo = self._create_model_for_test_data(self.test_data)
+        tm = self._create_model_for_test_data(self.test_data)
+        foo = tm.select('foo').execute().first()
         self.assertEqual(len(foo), 3)
 
     def test_contains(self):
