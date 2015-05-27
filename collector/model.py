@@ -21,6 +21,21 @@ class ModelMeta(ABCMeta):
 
 
 class Model(MutableMapping, QueryApiMixin):
+    """ Main class which is supposed to be a base class for every model
+    definition.
+
+    This class supports Query api as well as dict interface.
+
+    Parameters:
+    collection: Collection instance.
+    logname: Optional string to be used as log identifier.
+    Key/Value pairs as field variables and values.
+
+    Attributes:
+    _key: Could be used as an identifier of the particular data
+    _ts: Timestamp in milliseconds when the data is added to collections.
+
+    """
     __metaclass__ = ModelMeta
     _field_names = []
     _extra_http_queries = [('meta', '_key'), ('meta', '_ts')]
@@ -34,7 +49,7 @@ class Model(MutableMapping, QueryApiMixin):
         # TODO: include model attribute in QueryApiMixin?
         self.model = self
         logging.basicConfig()
-        logname = logname or self.__class__.__name__
+        self._logname = logname or self.__class__.__name__
         self.logger = logging.getLogger(logname)
         self._update_fields(kwargs)
         self.__dict__['_key'] = self._key
@@ -42,16 +57,38 @@ class Model(MutableMapping, QueryApiMixin):
 
     @property
     def _key(self):
+        """ Identifier of the particular data, can be set only, on creation of
+        the model instance.
+        """
         return self.__key
 
     @property
     def _ts(self):
+        """ Timestamp value in milliseconds which indicates the time of data
+        creation and should be assigned by collection server.
+
+        If needed, this value could be set.
+        """
         return self.__ts
 
     def create(self, *a, **kw):
-        return type(self)(self.collection, *a, **kw)
+        """ Creates a new instance in which given key/value pairs are assigned
+         to relevant Field declarations. Collections instance and logname will
+         be implicitly passed to the new instance.
+
+         Example:
+         model2 = model.create(_key='new_model', foo=foo_val2, bar=bar_val2)
+
+         In given example, foo and bar Field() attributes of the model, will be
+         assigned to foo_val2 and bar_val2 values respectively.
+        """
+        return type(self)(self.collection, self._logname, *a, **kw)
 
     def delete(self):
+        """ Removes the data from the collection.
+
+        Raises an exception if operation fails.
+        """
         self.collection.delete(self._key)
 
     @staticmethod
@@ -68,6 +105,13 @@ class Model(MutableMapping, QueryApiMixin):
         return flatten(query_chain_compiled)
 
     def execute(self, query=None):
+        """ Takes optional query parameter as an input and returns query result.
+
+         If query parameter is not given, then all data available in the
+         collection server, should be returned.
+
+         Raises an exception if operation fails, returns QueryResult otherwise.
+         """
         qchain = self._get_chain(query) if query else []
         qchain = self._sort_chain(qchain)
         params = self._compile_query_chain(qchain)
@@ -75,13 +119,14 @@ class Model(MutableMapping, QueryApiMixin):
         return QueryResult(model=self, result=result)
 
     def save(self):
+        """ Submits all variables of the data (declared as Field),
+        regardless of any change, to the collection server.
+
+         Raises an exception, if operation fails.
+        """
         updated_data = {'_key': self._key}
         updated_data.update(self._get_fields())
-        try:
-            self.collection.post(updated_data)
-        except Exception as ex:
-            self.logger.error('Unable to update the model, reason: %s'
-                              % ex.message)
+        self.collection.post(updated_data)
 
     def _update_fields(self, data):
         for key, val in data.items():
