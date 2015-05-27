@@ -128,7 +128,7 @@ for data in fm.prefix('fo', prefixcount=1).execute():
 #### Query based on timestamp value
 
 ```python
-print fm.when(starts=1432160309147).execute().first()
+print fm.when(startts=1432160309147).execute().first()
 """
 {'_key': u'foo', 'another_value': u'another_bar', '_ts': 1432160309147, 'value': u'modified value'}
 """
