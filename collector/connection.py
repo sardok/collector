@@ -2,6 +2,7 @@ import requests
 
 
 class HttpConnection(object):
+    """ Connects to the collection database by using Http protocol. """
     def __init__(self, username='', password=''):
         self.username = username
         self.password = password
@@ -28,10 +29,22 @@ class HttpConnection(object):
         return response.text
 
     def request(self, url, **kw):
+        """ Makes GET http request, returns response.
+
+        Raises Exception if response' status code is not 200.
+        """
         return self._do_request(method='GET', url=url, **kw)
 
     def post(self, url, **kw):
+        """ Makes POST http request, returns response.
+
+        Raises Exception if response' status code is not 200.
+        """
         return self._do_request(method='POST', url=url, **kw)
 
     def delete(self, url, **kw):
+        """ Makes DELETE http request, returns response.
+
+        Raises Exception if response' status code is not 200.
+        """
         return self._do_request(method='DELETE', url=url, **kw)
