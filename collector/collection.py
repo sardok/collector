@@ -6,6 +6,17 @@ from collector.iterators import JsonLinesIterator
 
 
 class Collection(object):
+    """
+    A class which provides connection to real collection database.
+
+    Parameters:
+
+    projectid: Project number.
+    collection: Collection name.
+    apikey: ScrapingHub api key.
+    store_type: Storage type (optional, default is 's').
+
+    """
     base_uri = 'https://storage.scrapinghub.com/collections/'
     http_conn_cls = HttpConnection
     iterator_cls = JsonLinesIterator
@@ -26,14 +37,35 @@ class Collection(object):
         self.logger = logging.getLogger('Collection')
 
     def request(self, query):
+        """ Makes a request to the collection database and returns the response.
+
+        Parameters:
+        query: Query parameters in array of (key,value) pairs (tuple).
+
+        """
         url = self.endpoint + '?' + urlencode(query)
         self.logger.debug('Requesting: %s' % url)
         return self.conn.request(url)
 
     def post(self, data):
+        """ Makes a post to the collection database and returns the response.
+
+        Parameters:
+        data: Should be in dict but in theory could be anything that
+        serializer of the iterator class (which JsonLines) support.
+
+        """
         payload = self.iterator_cls.serialize(data)
         self.logger.debug('Posting: %s (data: %r)' % (self.endpoint, payload))
-        self.conn.post(self.endpoint, data=payload)
+        return self.conn.post(self.endpoint, data=payload)
 
     def delete(self, key):
+        """ Makes a delete request to the collection database and returns the
+        response.
+
+        Parameters:
+        key: _key attribute of the particular model.
+
+        """
+        self.logger.debug('Deleting: %s.' % key)
         return self.conn.delete(self.endpoint + '/' + key)
